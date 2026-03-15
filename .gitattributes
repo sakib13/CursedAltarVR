@@ -1,0 +1,11 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Don't count Unity/Meta SDK files in language stats
+Assets/Oculus/** linguist-vendored
+Assets/Plugins/** linguist-vendored
+Packages/** linguist-vendored
+*.meta linguist-generated
+*.shader linguist-vendored
+*.cginc linguist-vendored
+*.hlsl linguist-vendored

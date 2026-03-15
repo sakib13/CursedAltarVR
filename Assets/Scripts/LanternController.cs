@@ -1,0 +1,242 @@
+using UnityEngine;
+using TMPro;
+
+public class LanternController : MonoBehaviour
+{
+    // --- Assign these in the Inspector ---
+    [Header("Scare Chain")]
+    public DoorScare doorScare;
+
+    [Header("Grab Settings")]
+    public float grabRange = 0.5f; // How close hand must be to pick up
+
+    [Header("Hold Offset (tweak in Inspector)")]
+    public Vector3 holdPositionOffset = new Vector3(0f, -0.15f, 0.08f);
+    public Vector3 holdRotationOffset = new Vector3(0f, 0f, 0f);
+
+    [Header("Flicker Settings")]
+    public float normalIntensity = 1.5f;
+    public float flickerSpeed = 10f;
+    public float flickerAmount = 0.3f;
+
+    [Header("Hint Settings")]
+    public float hintDelay = 10f; // seconds before hint appears
+
+    // --- Private state ---
+    private bool isHeld = false;
+    private bool hasBeenGrabbed = false; // permanent flag — prevents re-grab and hint after ForceLightOff
+    private bool doorScareArmed = false;
+    private bool isFlickering = false;
+
+    private Light lanternLight;
+    private ParticleSystem lanternFlame;
+    private GameObject lightObject;
+    private Collider lanternCollider;
+
+    private Transform rightHandAnchor;
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
+    private Transform originalParent;
+
+    // Hint
+    private float hintTimer = 0f;
+    private bool hintShown = false;
+    private GameObject hintTextGO;
+    private TextMeshPro hintTMP;
+    private AudioSource hintAudioSource;
+    private OVRCameraRig ovrRig;
+
+    void Start()
+    {
+        // Find the right hand anchor from OVRCameraRig
+        OVRCameraRig rig = FindObjectOfType<OVRCameraRig>();
+        if (rig != null)
+        {
+            rightHandAnchor = rig.rightHandAnchor;
+            ovrRig = rig;
+        }
+
+        // Auto-find light and flame from children
+        lanternLight = GetComponentInChildren<Light>(true); // true = include inactive
+        lanternFlame = GetComponentInChildren<ParticleSystem>();
+
+        // Save the light's GameObject so we can toggle it
+        if (lanternLight != null)
+            lightObject = lanternLight.gameObject;
+
+        // Get the collider to disable during grab
+        lanternCollider = GetComponent<Collider>();
+
+        // Save original transform so we can put it back on release
+        originalPosition = transform.position;
+        originalRotation = transform.rotation;
+        originalParent = transform.parent;
+
+        // Light off at start, but flame stays on as a visual hint
+        if (lightObject != null)
+            lightObject.SetActive(false);
+        if (lanternFlame != null)
+            lanternFlame.Play();
+
+        // Create hint audio source
+        hintAudioSource = gameObject.AddComponent<AudioSource>();
+        hintAudioSource.spatialBlend = 0f;
+        hintAudioSource.playOnAwake = false;
+    }
+
+    void Update()
+    {
+        // Hint timer — show after delay if never grabbed
+        if (!hasBeenGrabbed && !hintShown)
+        {
+            hintTimer += Time.deltaTime;
+            if (hintTimer >= hintDelay)
+            {
+                hintShown = true;
+                ShowHint();
+            }
+        }
+
+        // Keep hint text facing player
+        if (hintTextGO != null && ovrRig != null)
+        {
+            Transform head = ovrRig.centerEyeAnchor;
+            hintTextGO.transform.rotation = Quaternion.LookRotation(hintTextGO.transform.position - head.position, Vector3.up);
+        }
+
+        // Right index trigger press to grab (one-time only, cannot release)
+        if (!hasBeenGrabbed && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
+        {
+            if (rightHandAnchor != null)
+            {
+                float dist = Vector3.Distance(transform.position, rightHandAnchor.position);
+                if (dist <= grabRange)
+                    GrabLantern();
+            }
+        }
+
+        // Arm the door scare once lantern is grabbed
+        if (isHeld && !doorScareArmed)
+        {
+            doorScareArmed = true;
+            if (doorScare != null)
+                doorScare.Arm();
+        }
+
+        // Handle light flickering while held
+        if (isHeld && lanternLight != null)
+        {
+            if (isFlickering)
+            {
+                // Erratic flicker when close to altar
+                float flicker = Mathf.PerlinNoise(Time.time * flickerSpeed * 2f, 0f);
+                lanternLight.intensity = normalIntensity * flicker;
+            }
+            else
+            {
+                // Gentle natural flicker
+                float flicker = 1f - (Mathf.PerlinNoise(Time.time * flickerSpeed, 0f) * flickerAmount);
+                lanternLight.intensity = normalIntensity * flicker;
+            }
+        }
+    }
+
+    void ShowHint()
+    {
+        // Play "takethelight" audio
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Sound s = System.Array.Find(SoundManager.Instance.sounds, x => x.name == "takethelight");
+            if (s != null && s.clip != null)
+            {
+                hintAudioSource.clip = s.clip;
+                hintAudioSource.volume = s.volume;
+                hintAudioSource.Play();
+            }
+        }
+
+        // Create floating text above lantern (0.6f to clear the lantern mesh)
+        hintTextGO = new GameObject("LanternHint");
+        hintTextGO.transform.position = transform.position + Vector3.up * 0.6f;
+
+        hintTMP = hintTextGO.AddComponent<TextMeshPro>();
+        hintTMP.text = "Right Trigger to grab";
+        hintTMP.fontSize = 0.5f;
+        hintTMP.alignment = TextAlignmentOptions.Center;
+        hintTMP.color = new Color(1f, 0.85f, 0.5f);
+
+        // Size the text rect (wide enough so text doesn't clip)
+        RectTransform rt = hintTextGO.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(0.8f, 0.25f);
+
+        Debug.Log("[LanternController] Hint shown at Y=" + hintTextGO.transform.position.y);
+    }
+
+    void RemoveHint()
+    {
+        if (hintTextGO != null)
+        {
+            Destroy(hintTextGO);
+            hintTextGO = null;
+        }
+        if (hintAudioSource != null && hintAudioSource.isPlaying)
+            hintAudioSource.Stop();
+    }
+
+    void GrabLantern()
+    {
+        isHeld = true;
+        hasBeenGrabbed = true; // permanent — blocks hint and re-grab forever
+
+        // Remove hint if showing
+        RemoveHint();
+
+        // Attach lantern to right hand with offset so it hangs below like a real lantern
+        transform.SetParent(rightHandAnchor);
+        transform.localPosition = holdPositionOffset;
+        transform.localRotation = Quaternion.Euler(holdRotationOffset);
+
+        // Disable collider so it can't push through floor/walls
+        if (lanternCollider != null) lanternCollider.enabled = false;
+
+        // Turn on light and flame
+        if (lightObject != null) lightObject.SetActive(true);
+        if (lanternFlame != null) lanternFlame.Play();
+    }
+
+    void ReleaseLantern()
+    {
+        isHeld = false;
+
+        // Put lantern back to original spot
+        transform.SetParent(originalParent);
+        transform.position = originalPosition;
+        transform.rotation = originalRotation;
+
+        // Re-enable collider and turn off light
+        if (lanternCollider != null) lanternCollider.enabled = true;
+        if (lightObject != null) lightObject.SetActive(false);
+    }
+
+    // Called by CandleController when player is close to the altar
+    public void SetFlickering(bool flicker)
+    {
+        isFlickering = flicker;
+    }
+
+    // Called by CursedSkull to force lantern light off (darkness phase)
+    public void ForceLightOff()
+    {
+        if (lightObject != null)
+            lightObject.SetActive(false);
+        isHeld = false; // Stop flicker updates from running
+    }
+
+    // Called by CursedSkull to force lantern light back on (chaos phase)
+    public void ForceLightOn()
+    {
+        if (lightObject != null)
+            lightObject.SetActive(true);
+        isHeld = true; // Resume flicker updates
+    }
+}
