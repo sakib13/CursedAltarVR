@@ -108,7 +108,7 @@ Watch the full gameplay walkthrough:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/sakib13/CursedAltar.git
+   git clone https://github.com/sakib13/CursedAltarVR.git
    ```
 2. Open the project in Unity 6 (or later) with Universal Render Pipeline
 3. Ensure Meta XR SDK v85 is installed via the Package Manager
