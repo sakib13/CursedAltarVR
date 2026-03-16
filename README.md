@@ -30,7 +30,7 @@ From this starting point, several key decisions emerged through iterative explor
 
 **Interaction Design:** Each player interaction was designed to serve a dual purpose. The lantern is not just a light source; it is the player's only comfort in darkness, making its loss during the blackout phase deeply unsettling. The skull is not just an object to grab; it becomes the player's companion through a ritual they did not choose to participate in. The cross puzzle (a thumbstick sequence to invert the cross) was inspired by demonic imagery and gives the player a moment of agency before the horror escalates beyond their control.
 
-**Physical Hardware Integration:** The decision to use an ESP32 with an ultrasonic sensor and buzzers was driven by a specific design goal: the player should experience something they cannot explain through VR alone. The ultrasonic sensor on the floor detects the player's legs, a body part the Quest headset cannot track, creating a sense that the cabin is truly aware of their presence. The buzzers, hidden beneath a real table, fire an eerie tone from below, an unexpected physical location that conflicts with the VR soundscape and creates spatial audio disorientation.
+**Physical Hardware Integration:** The decision to use an ESP32 with an ultrasonic sensor and buzzers was driven by a specific design goal: the player should experience something they cannot explain through VR alone. The ultrasonic sensor on the table detects the player's lower body part which the Quest headset cannot track, creating a sense that the cabin is truly aware of their presence. The buzzers fire an eerie tone, an unexpected physical location that conflicts with the VR soundscape and creates spatial audio disorientation.
 
 ### User Experience Flow
 
@@ -74,6 +74,7 @@ The experience was carefully choreographed to build tension through a series of 
 - After the chaos, a blackout fades into a Ring inspired cursed video
 - The VR world dissolves into Meta Quest passthrough mode, revealing the player's real surroundings
 - The boundary between virtual horror and physical reality is erased
+- The very last VR scene in the gameplay flow is intentionally designed in such a way that player should be near the table when watching the video inside VR.
 
 **ESP32 Physical Feedback System**
 - HC SR04 ultrasonic sensor detects the player's real world leg proximity to the altar
@@ -157,17 +158,17 @@ GPIO 6, 7, 8, 9 ─────────────────────�
 | Action | Controller | Input |
 | ------ | ---------- | ----- |
 | Pick up lantern | Right controller | Right trigger (near lantern) |
-| Open cabinet | Right or left controller | Point and pull trigger |
+| Open cabinet | Left controller | Point and pull trigger |
 | Cross ritual | Left controller | Thumbstick (Up, Left, Down, Right, Up) |
 | Build up candle | Right controller | Hold B button |
-| Grab skull | Right or left controller | Trigger (near skull) |
+| Grab skull | Left controller | Trigger (near skull) |
 | Move around | Left controller | Thumbstick (after lantern pickup, locomotion is locked) |
 
 ### Gameplay Tips
 
 - The lantern is your only light source. Once you pick it up, it stays in your hand for the entire experience. Pay attention to how it reacts to your surroundings
 - When you hear whispers, follow them. The cabin is trying to tell you something
-- The cross on the wall requires a specific directional sequence on the thumbstick. Listen for audio cues and watch for the red glow that confirms each correct input
+- The cross on the wall requires a specific directional sequence on the thumbstick. Listen for audio cues, look for the clues in the cabin and watch for the red glow that confirms each correct input
 - After placing the skull on the table, do not look away. The curse responds to your gaze
 - When the room goes dark, stay calm. Look around slowly. Something is watching you
 - In the final phase, you will see the real world through your headset. The experience is not over
@@ -179,12 +180,12 @@ GPIO 6, 7, 8, 9 ─────────────────────�
 │                            │
 │  ┌──────────────────────┐  │
 │  │  Table               │  │
-│  │  (ESP32 + buzzers    │  │
-│  │   hidden underneath) │  │
+│  │  (ESP32 + buzzers +Ultrasonic )  │ │
+                
 │  └──────────────────────┘  │
 │                            │
-│  [Ultrasonic on floor,     │
-│   pointing toward player]  │
+│  
+│   [pointing toward player]  │
 │                            │
 │         ~2m walk           │
 │                            │
@@ -196,13 +197,13 @@ GPIO 6, 7, 8, 9 ─────────────────────�
 │    (tape mark on floor)    │
 │                            │
 └────────────────────────────┘
-         ~ 2m × 2m area
+         ~ 3m × 3m area
 ```
 
 - Place the ESP32 breadboard and buzzers under a real table, hidden from view
 - Tape the ultrasonic sensor to the floor near the table, pointing outward toward the player's starting position
 - Both the Quest headset and ESP32 must be on the same Wi Fi network (phone hotspot recommended for portability)
-- Mark the play area (~2m × 2m) and starting position with tape on the floor
+- Mark the play area (~3m × 3m) and starting position with tape on the floor
 
 ## References
 
