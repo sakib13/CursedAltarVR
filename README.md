@@ -24,7 +24,7 @@ The brainstorming process began with a central question: *How can a VR horror ex
 
 From this starting point, several key decisions emerged through iterative exploration:
 
-**Setting and Atmosphere:** A small, enclosed cabin was chosen as the environment because tight spaces amplify claustrophobia in VR. The cabin's 2m × 2m interior was deliberately designed to match a typical Quest Guardian boundary, ensuring the player's physical play space and virtual space overlapped perfectly.
+**Setting and Atmosphere:** A small, enclosed cabin was chosen as the environment because tight spaces amplify claustrophobia in VR. The cabin's 3m × 3m interior was deliberately designed to match a typical Quest Guardian boundary, ensuring the player's physical play space and virtual space overlapped perfectly.
 
 **Narrative Structure:** The gameplay was designed as a linear sequence of escalating supernatural events, each one more unsettling than the last. The progression moves from subtle (a door slamming, a stool sliding on its own) to overt (a skull appearing from thin air, a demonic ritual) to reality breaking (passthrough mixed reality, physical buzzers firing). This escalation mirrors classic horror film pacing.
 
@@ -204,6 +204,39 @@ GPIO 6, 7, 8, 9 ─────────────────────�
 - Tape the ultrasonic sensor to the floor near the table, pointing outward toward the player's starting position
 - Both the Quest headset and ESP32 must be on the same Wi Fi network (phone hotspot recommended for portability)
 - Mark the play area (~3m × 3m) and starting position with tape on the floor
+
+## Challenges and Solutions
+
+### Design Challenges
+
+**Creating Horror That Feels Personal, Not Just Spooky**
+The biggest design challenge was moving beyond surface level scares. Jump scares and dark environments can startle a player, but they do not create lasting dread. The goal was to make the player feel like they are living inside a horror story, not watching one. This led to the decision to build a first person narrative where the player is the last investigator sent to a cabin where everyone before them has vanished. Every interaction, from picking up the lantern to placing the skull on the altar, was designed to make the player feel like the main character in a horror film rather than a spectator.
+
+**Designing the Pentagram Ritual Sequence**
+The pentagram and skull ritual went through several iterations. The challenge was to create a sequence that feels genuinely disturbing without relying on gore or cheap tricks. The solution was to build a slow escalation: the player lights candles around a pentagram by carrying a cursed skull, then faces a stare contest where the skull glows brighter the longer they look at it. This design forces the player to actively participate in the ritual rather than passively witnessing it, making them feel complicit in the horror.
+
+**The Hanging Girl and Darkness Phase**
+Introducing the hanging girl figure was a deliberate decision to push the horror from supernatural mystery into visceral terror. She first appears hanging from the ceiling when the cursed skull materializes on the altar, establishing an unsettling presence that the player cannot ignore as they carry out the ritual. Later, during total darkness, she is silently repositioned to the center of the pentagram. When the player looks around in the dark and discovers her frozen figure standing right there, the scare comes from their own curiosity rather than a scripted trigger. This design principle, letting the player scare themselves through exploration, proved far more effective than any timed jump scare.
+
+**Balancing Player Agency and Scripted Horror**
+The experience needed to feel interactive without giving the player so much freedom that they miss the scares. The solution was a linear but disguised progression: the player feels like they are freely exploring the cabin, but each interaction (door slam, cabinet, cross puzzle, skull ritual) is gated behind the previous one. The player always feels in control even though the cabin is controlling them.
+
+**Breaking the Fourth Wall with Physical Feedback**
+The most ambitious design decision was making the horror escape the headset entirely. The transition from full VR to passthrough mixed reality, followed by real buzzers firing from beneath the player's table, was designed to shatter the feeling of safety that comes from knowing "it is just a game." The "seven days" whisper at the end, delivered while the player stares at their own real room through passthrough, leaves them questioning whether the experience truly ended.
+
+### Technical Challenges
+
+**Quest GPU Shader Compatibility**
+Several imported assets used shaders designed for desktop GPUs that do not render correctly on the Quest mobile hardware. These appeared as invisible or magenta objects on the headset. The solution was to replace incompatible materials with URP compatible alternatives and to use FBX format for 3D model imports instead of GLTF.
+
+**Passthrough Mixed Reality Limitations**
+The Quest's URP pipeline cannot reliably composite virtual objects on top of the passthrough camera feed. The original plan to blend VR elements into the real world during the ending was not feasible. The design was adapted so that the passthrough transition serves as a clean, full break from the virtual world, which ultimately made the ending feel more impactful.
+
+**ESP32 Wireless Communication**
+The ESP32 S2 only supports Wi Fi, which introduced latency concerns for real time gameplay triggers. An HTTP based polling architecture was used to read sensor data and send buzzer commands. A phone hotspot served as the shared network to avoid dependency on venue infrastructure.
+
+**Script Execution Order**
+Unity does not guarantee the order in which scripts initialize, which caused a visual flickering issue at startup where the passthrough layer was being toggled by multiple scripts simultaneously. Restructuring the initialization sequence resolved the conflict.
 
 ## References
 
